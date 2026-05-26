@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+    /* Color */
+    --color-dark: #1B1B1F;
+    --color-light: #A6A6A6;
+
+    /* Fonts */
+    --font-inter: 'Inter', sans-serif;
+    --font-syne: 'Syne', sans-serif;
+    --font-caramel: 'Caramel', sans-serif;
+}
