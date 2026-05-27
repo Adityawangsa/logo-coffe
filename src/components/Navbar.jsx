@@ -1,36 +1,49 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-export default function Navbar() {
-  // =========================================================
-  // STATE
-  // =========================================================
+// Data link utama dipisah dari component agar render lebih mudah dibaca.
+// Jika nanti ingin menambah menu, cukup ubah array ini tanpa menyentuh JSX utama.
+const NAV_LINKS = [
+  {
+    name: "Beranda",
+    href: "#beranda",
+  },
+  {
+    name: "Talenta",
+    href: "#talenta",
+  },
+  {
+    name: "Tentang Kami",
+    href: "#tentang-kami",
+  },
+];
 
-  // Navbar berubah style ketika discroll
+// Data dropdown desktop dan mobile dibuat satu sumber agar isi menunya konsisten.
+const DROPDOWN_LINKS = ["Blog", "Karir", "Komunitas"];
+
+export default function Navbar() {
+  // Menentukan apakah navbar sudah melewati titik scroll tertentu.
   const [scrolled, setScrolled] = useState(false);
 
-  // Mobile menu open / close
+  // Mengatur panel menu mobile terbuka atau tertutup.
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Dropdown desktop open / close
+  // Mengatur dropdown "Lainnya" pada desktop.
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Dropdown mobile open / close
+  // Mengatur dropdown "Lainnya" pada mobile.
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
 
-  // Ref untuk timeout dropdown
+  // Menyimpan id timeout agar delay tutup dropdown desktop bisa dibatalkan saat mouse masuk lagi.
   const dropdownTimeoutRef = useRef(null);
 
-  // =========================================================
-  // EFFECT
-  // =========================================================
-
-  // Detect scroll navbar
   useEffect(() => {
     const handleScroll = () => {
+      // Navbar diberi style solid setelah user scroll lebih dari 20px.
       setScrolled(window.scrollY > 20);
     };
 
+    // Listener ini baru bekerja saat user melakukan scroll, sesuai alur kode awal.
     window.addEventListener("scroll", handleScroll);
 
     return () => {
@@ -38,60 +51,46 @@ export default function Navbar() {
     };
   }, []);
 
-  // Disable scroll ketika mobile menu terbuka
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
+    // Saat menu mobile terbuka, body dikunci supaya halaman belakang tidak ikut scroll.
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+
+    return () => {
+      // Cleanup ini memastikan style body kembali normal ketika Navbar unmount.
       document.body.style.overflow = "";
-    }
+    };
   }, [mobileMenuOpen]);
 
-  // =========================================================
-  // NAVIGATION DATA
-  // =========================================================
+  useEffect(() => {
+    return () => {
+      // Mencegah timeout yang masih tertunda berjalan setelah component dilepas.
+      clearTimeout(dropdownTimeoutRef.current);
+    };
+  }, []);
 
-  const navLinks = [
-    {
-      name: "Beranda",
-      href: "#beranda",
-    },
-    {
-      name: "Talenta",
-      href: "#talenta",
-    },
-    {
-      name: "Tentang Kami",
-      href: "#tentang-kami",
-    },
-  ];
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen((isOpen) => !isOpen);
+  };
 
-  // =========================================================
-  // DROPDOWN HANDLER
-  // =========================================================
+  const toggleMobileDropdown = () => {
+    setMobileDropdownOpen((isOpen) => !isOpen);
+  };
 
-  const handleMouseEnter = () => {
+  const handleDropdownMouseEnter = () => {
+    // Jika mouse masuk lagi sebelum timeout selesai, dropdown tetap terbuka.
     clearTimeout(dropdownTimeoutRef.current);
-
     setDropdownOpen(true);
   };
 
-  const handleMouseLeave = () => {
+  const handleDropdownMouseLeave = () => {
+    // Delay singkat membuat dropdown tidak langsung hilang saat pointer bergerak sedikit.
     dropdownTimeoutRef.current = setTimeout(() => {
       setDropdownOpen(false);
     }, 100);
   };
 
-  // =========================================================
-  // RENDER
-  // =========================================================
-
   return (
     <>
-      {/* ========================================================= */}
-      {/* HEADER */}
-      {/* ========================================================= */}
-
       <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4">
         <nav
           className={`
@@ -125,12 +124,8 @@ export default function Navbar() {
             }
           `}
         >
-          {/* ========================================================= */}
-          {/* LEFT SIDE */}
-          {/* ========================================================= */}
-
           <div className="flex items-center gap-14">
-            {/* Logo */}
+            {/* Logo selalu mengarah ke root website. */}
             <a href="/" className="flex items-center">
               <img
                 src="/WebLogo.png"
@@ -139,12 +134,9 @@ export default function Navbar() {
               />
             </a>
 
-            {/* ========================================================= */}
-            {/* DESKTOP NAVIGATION */}
-            {/* ========================================================= */}
-
+            {/* Navigasi desktop hanya muncul pada breakpoint lg ke atas. */}
             <ul className="hidden items-center gap-10 lg:flex">
-              {navLinks.map((link) => (
+              {NAV_LINKS.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
@@ -181,16 +173,14 @@ export default function Navbar() {
                 </li>
               ))}
 
-              {/* ========================================================= */}
-              {/* DROPDOWN */}
-              {/* ========================================================= */}
-
               <li
                 className="relative"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
+                onMouseEnter={handleDropdownMouseEnter}
+                onMouseLeave={handleDropdownMouseLeave}
               >
+                {/* Button ini membuka dropdown desktop lewat event hover pada parent li. */}
                 <button
+                  type="button"
                   className="
                     flex
                     items-center
@@ -221,10 +211,7 @@ export default function Navbar() {
                   />
                 </button>
 
-                {/* ========================================================= */}
-                {/* DROPDOWN MENU */}
-                {/* ========================================================= */}
-
+                {/* Dropdown tetap dirender agar transisi opacity dan translate berjalan halus. */}
                 <div
                   className={`
                     absolute
@@ -258,7 +245,7 @@ export default function Navbar() {
                     }
                   `}
                 >
-                  {["Blog", "Karir", "Komunitas"].map((item) => (
+                  {DROPDOWN_LINKS.map((item) => (
                     <a
                       key={item}
                       href="#"
@@ -286,13 +273,10 @@ export default function Navbar() {
             </ul>
           </div>
 
-          {/* ========================================================= */}
-          {/* RIGHT SIDE */}
-          {/* ========================================================= */}
-
+          {/* Action desktop disembunyikan pada mobile agar layout header tetap ringkas. */}
           <div className="hidden items-center gap-3 lg:flex">
-            {/* Login */}
             <button
+              type="button"
               className="
                 rounded-full
                 bg-zinc-100
@@ -312,8 +296,8 @@ export default function Navbar() {
               Masuk
             </button>
 
-            {/* Register */}
             <button
+              type="button"
               className="
                 rounded-full
                 bg-zinc-900
@@ -337,12 +321,10 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* ========================================================= */}
-          {/* MOBILE BUTTON */}
-          {/* ========================================================= */}
-
+          {/* Tombol hamburger hanya muncul pada mobile dan berubah menjadi ikon X saat aktif. */}
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            type="button"
+            onClick={toggleMobileMenu}
             className="
               relative
               flex
@@ -353,7 +335,6 @@ export default function Navbar() {
               lg:hidden
             "
           >
-            {/* Top */}
             <span
               className={`
                 absolute
@@ -368,7 +349,6 @@ export default function Navbar() {
               `}
             />
 
-            {/* Middle */}
             <span
               className={`
                 absolute
@@ -383,7 +363,6 @@ export default function Navbar() {
               `}
             />
 
-            {/* Bottom */}
             <span
               className={`
                 absolute
@@ -401,60 +380,60 @@ export default function Navbar() {
         </nav>
       </header>
 
-      {/* ========================================================= */}
-      {/* MOBILE OVERLAY */}
-      {/* ========================================================= */}
-
+      {/* Overlay mobile tetap ada di DOM agar animasi masuk dan keluar bisa memakai class Tailwind. */}
       <div
         className={`
-        fixed inset-0 z-40
-        px-4 pt-26
-        bg-zinc-900/20
-        dark:bg-white/20
-        backdrop-blur-sm
-        transition-all duration-300
-        lg:hidden
+          fixed inset-0 z-40
+          px-4 pt-26
+          bg-zinc-900/20
+          dark:bg-white/20
+          backdrop-blur-sm
+          transition-all duration-300
+          lg:hidden
 
-    ${mobileMenuOpen ? "visible opacity-100" : "invisible opacity-0"}
-  `}
+          ${mobileMenuOpen ? "visible opacity-100" : "invisible opacity-0"}
+        `}
       >
         <div
           className={`
-      mx-auto max-w-md sm:max-w-full
-      rounded-3xl
-      border border-zinc-200
-      bg-white
-      p-6
-      shadow-2xl shadow-black/10
-      transition-all duration-300
+            mx-auto max-w-md sm:max-w-full
+            rounded-3xl
+            border border-zinc-200
+            bg-white
+            p-6
+            shadow-2xl shadow-black/10
+            transition-all duration-300
 
-      ${
-        mobileMenuOpen
-          ? "translate-y-0 opacity-100"
-          : "-translate-y-4 opacity-0"
-      }
-    `}
+            ${
+              mobileMenuOpen
+                ? "translate-y-0 opacity-100"
+                : "-translate-y-4 opacity-0"
+            }
+          `}
         >
           <ul className="flex flex-col">
-            {navLinks.map((link) => (
+            {NAV_LINKS.map((link) => (
               <li key={link.name} className="border-b border-zinc-200">
                 <a
                   href={link.href}
                   className="
-              flex items-center justify-between
-              py-5
-              text-lg
-              font-semibold
-              text-zinc-700
-            "
+                    flex items-center justify-between
+                    py-5
+                    text-lg
+                    font-semibold
+                    text-zinc-700
+                  "
                 >
                   {link.name}
                 </a>
               </li>
             ))}
+
             <li>
+              {/* Dropdown mobile memakai click karena tidak ada interaksi hover di layar sentuh. */}
               <button
-                onClick={() => setMobileDropdownOpen(!mobileDropdownOpen)}
+                type="button"
+                onClick={toggleMobileDropdown}
                 className="
                     flex
                     items-center
@@ -482,10 +461,7 @@ export default function Navbar() {
                 />
               </button>
 
-              {/* ========================================================= */}
-              {/* DROPDOWN MENU */}
-              {/* ========================================================= */}
-
+              {/* Dropdown mobile hanya dirender saat terbuka, sama seperti kode awal. */}
               {mobileDropdownOpen && (
                 <div
                   className="
@@ -501,10 +477,10 @@ export default function Navbar() {
                     ease-[cubic-bezier(0.22,1,0.36,1)]
                   "
                 >
-                  {/* Wrapper penting agar overflow animation smooth */}
+                  {/* Wrapper ini menjaga isi dropdown tetap rapi jika animasi tinggi ditambahkan. */}
                   <div className="overflow-hidden">
                     <div className="flex flex-col gap-2 w-full">
-                      {["Blog", "Karir", "Komunitas"].map((item) => (
+                      {DROPDOWN_LINKS.map((item) => (
                         <a
                           key={item}
                           href="#"
@@ -526,7 +502,7 @@ export default function Navbar() {
 
                               hover:bg-zinc-100
                               hover:text-zinc-900
-            "
+                          "
                         >
                           {item}
                         </a>
@@ -540,27 +516,29 @@ export default function Navbar() {
 
           <div className="mt-6 flex flex-col gap-3">
             <button
+              type="button"
               className="
-          w-full rounded-2xl
-          border border-zinc-300
-          py-4 text-lg font-semibold
-          text-zinc-700
-          active:bg-zinc-200/70
-          transition-all duration-300
-        "
+                w-full rounded-2xl
+                border border-zinc-300
+                py-4 text-lg font-semibold
+                text-zinc-700
+                active:bg-zinc-200/70
+                transition-all duration-300
+              "
             >
               Daftar
             </button>
 
             <button
+              type="button"
               className="
-          w-full rounded-2xl
-          bg-zinc-900
-          py-4 text-lg font-semibold
-          text-white
-          active:bg-zinc-700
-          transition-all duration-300
-        "
+                w-full rounded-2xl
+                bg-zinc-900
+                py-4 text-lg font-semibold
+                text-white
+                active:bg-zinc-700
+                transition-all duration-300
+              "
             >
               Masuk
             </button>
